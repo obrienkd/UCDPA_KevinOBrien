@@ -94,11 +94,15 @@ def xlookup(lookup_value, lookup_array, return_array, if_not_found: str = ''):
         return match_value.tolist()[0]
 
 # check it works
-print(xlookup('Novak Djokovic', playerid['full_name'], playerid['playerid'])
+print(xlookup('Novak Djovic', playerid['full_name'], playerid['playerid'])
 
 # need to add in wta
+
+print(df.head())
+
 # next
 
 # apply across all player 1 and player 2 columns
 
 df_a['player1ID'] = df_a['player1'].apply(xlookup, args=(playerid['full_name'], playerid['playerid']))
+
