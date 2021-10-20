@@ -76,6 +76,29 @@ df_a['surface'] = df_a['slam'].apply(map_values, args = (values_dict,))
 # df not defined?? print(type(df['PointNumber']))
 # working?? re.sub('\D', '',  df['PointNumber'])
 
-print(df.dtypes)
 # notworking pattern = r'[0-9]'
-# not working df['PointNumber'] = re.sub(pattern, '', df['PointNumber'])
+# not
+# working df['PointNumber'] = re.sub(pattern, '', df['PointNumber'])
+
+playerid = pd.read_csv(r'G:\My Drive\College G Drive\Tennis_ML\atp_players_full.csv')
+
+
+# function to perform a lookup across two files & identify the player's id
+
+def xlookup(lookup_value, lookup_array, return_array, if_not_found: str = ''):
+    match_value = return_array.loc[lookup_array == lookup_value]
+    if match_value.empty:
+        return f'"{lookup_value}" not found!' if if_not_found == '' else if_not_found
+
+    else:
+        return match_value.tolist()[0]
+
+# check it works
+print(xlookup('Novak Djokovic', playerid['full_name'], playerid['playerid'])
+
+# need to add in wta
+# next
+
+# apply across all player 1 and player 2 columns
+
+df_a['player1ID'] = df_a['player1'].apply(xlookup, args=(playerid['full_name'], playerid['playerid']))
