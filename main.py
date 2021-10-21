@@ -54,14 +54,14 @@ df = df.drop(columns=['Speed_MPH', 'History', 'Rally', 'P1Momentum', 'P2Momentum
                       'Winner_FH', 'Winner_BH', 'ServingTo', 'P1TurningPoint', 'P2TurningPoint'])
 
 # drop columns with multiple n/a
-df_list_of_matches = df_list_of_matches.drop(columns=['status', 'winner', 'event_name', 'round', 'court_name', 'court_id', 'player1id',
-                       'player2id', 'nation1', 'nation2'])
+df_list_of_matches = df_list_of_matches.drop(columns=['status', 'event_name', 'round', 'court_name', 'court_id', 'nation1', 'nation2'])
 
 df_merged = pd.merge(df, df_list_of_matches, on='match_id')
+print(df_merged.head())
 
-df_merge_minus = df_merged.drop_duplicates()
 
-df_a = df_merge_minus
+df_a = df_merged
+print(head.df_a())
 
 # adding surface to each grandslam match
 
@@ -71,8 +71,9 @@ def map_values(row, values_dict):
 values_dict = {'usopen': 'hard', 'wimbledon': 'grass', 'frenchopen': 'clay', 'ausopen': 'hard'}
 df_a['surface'] = df_a['slam'].apply(map_values, args = (values_dict,))
 
+print(df_a.head())
 
-
+df_a.to_csv(r'G:\My Drive\College G Drive\Tennis_ML\df_merged.csv')
 # df not defined?? print(type(df['PointNumber']))
 # working?? re.sub('\D', '',  df['PointNumber'])
 
@@ -80,7 +81,7 @@ df_a['surface'] = df_a['slam'].apply(map_values, args = (values_dict,))
 # not
 # working df['PointNumber'] = re.sub(pattern, '', df['PointNumber'])
 
-playerid = pd.read_csv(r'G:\My Drive\College G Drive\Tennis_ML\atp_players_full.csv')
+playerid = pd.read_csv(r'G:\My Drive\College G Drive\Tennis_ML\player_list.csv')
 
 
 # function to perform a lookup across two files & identify the player's id
@@ -94,7 +95,7 @@ def xlookup(lookup_value, lookup_array, return_array, if_not_found: str = ''):
         return match_value.tolist()[0]
 
 # check it works
-print(xlookup('Novak Djovic', playerid['full_name'], playerid['playerid'])
+print(xlookup('Novak Djokovic', playerid['full_name'], playerid['atp_id'])
 
 # need to add in wta
 
@@ -104,5 +105,5 @@ print(df.head())
 
 # apply across all player 1 and player 2 columns
 
-df_a['player1ID'] = df_a['player1'].apply(xlookup, args=(playerid['full_name'], playerid['playerid']))
-
+df_a['player1ID'] = df_a['player1'].apply(xlookup, args=(playerid['full_name'], playerid['atp_id']))
+print(df_a.head())
