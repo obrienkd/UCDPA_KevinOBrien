@@ -1,38 +1,50 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import regex
+import numpy as np
+import seaborn as sns
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+
+
 nba = pd.read_csv(r'c:\users\hp\nba_draft_combine_all_years.csv')
-print(nba.head())
 
 
 #predict if nba player is drafted or not based on values from the draft competition
 
 # drop draft pick column & height-no shoes
-print(nba.columns)
-    nba = nba.drop(columns = 'Draft pick', 'Height (No Shoes)')
 
 #class imbalance
 print(nba['drafted or no'].value_counts())
 
 # over sample / SMOTE / under
-
+nba.isna().sum()
 # Any n/a's?
 print(nba.isna().sum())
+# median values assigned to 67 missing verticals, weight, body fat and 233 bench press values
+
+nba['Vertical (Max)'] = nba['Vertical (Max)'].replace(np.nan,nba['Vertical (Max)'].median())
+nba['Vertical (Max Reach)'] = nba['Vertical (Max Reach)'].replace(np.nan,nba['Vertical (Max Reach)'].median())
+nba['Vertical (No Step Reach)'] = nba['Vertical (No Step Reach)'].replace(np.nan,nba['Vertical (No Step Reach)'].median())
+nba['Vertical (No Step)'] = nba['Vertical (No Step)'].replace(np.nan,nba['Vertical (No Step)'].median())
+nba['Weight'] = nba['Weight'].replace(np.nan,nba['Weight'].median())
+nba['Body Fat'] = nba['Body Fat'].replace(np.nan,nba['Body Fat'].median())
+nba['Agility'] = nba['Agility'].replace(np.nan,nba['Agility'].median())
+nba['Sprint'] = nba['Sprint'].replace(np.nan,nba['Sprint'].median())
+nba['Bench'] = nba['Bench'].replace(np.nan,nba['Bench'].median())
+nba.isna().sum()
+nba['Height (With Shoes)'].isnull().any(axis=1)
 
 
-# plot drafted & non drafted players
-
-plt.interactive(False)
-# plot histograms of all columns:
-nba.hist()
-plt.show()
 
 # box plots -
-import seaborn as sns
-sns.set_theme(style="whitegrid")
 
-ax = sns.boxplot(x="drafted or no", y="Body Fat", data=nba)
-print(ax)
-plt.show()
+sns.set_theme(style="whitegrid")
 
 # convert all inches to cm
 inch_cols = ['Height (No Shoes)', 'Height (With Shoes)', 'Wingspan', 'Standing reach', 'Vertical (Max)',
@@ -44,7 +56,7 @@ for n in inch_cols:
 
 # convert weight in lbs to kilos
 nba['Weight'] = nba['Weight'] * 0.453592
-print(nba['Weight'].describe())
+
 
 # assess the distribution of the variables in the columns
 numeric_figs = ['Height (No Shoes)', 'Height (With Shoes)', 'Wingspan', 'Standing reach', 'Vertical (Max)',
@@ -60,39 +72,36 @@ for m in numeric_figs:
     plt.show()
 
 
-# create new variable - vertical no step : height... e.g. what is the height someone can jump in relation to their height
-print(nba['Vertical (Max)'].describe())
-nba['Vertical_to_height'] = nba['Vertical (N']
-
 #drop draft
-nba.columns
-nba = nba.drop(columns = 'Draft pick')
-nba.columns
+
 
 # figure out if there is much correlation between variables as some are similar
 cor_mat = nba.corr()
 sns.heatmap(cor_mat)
 plt.show()
 
-large correlation between ht variables
+# large correlation between ht variables
 
 # transform variables due to outliers
 for m in numeric_figs:
     nba["{}_zscore".format(m)] = (nba[m] - nba[m].mean())/nba[m].std(ddof=0)
-nba.columns
 
-nba['drafted or no'].value_counts()
+
+
 # 384 drafted, 133 not drafted
 
+#convert to 'drafted or no' to 1 or 0
 
-#convert to 'drafted or no' to boolean
+nba['draft'] = [1 if x == 'Drafted' else 0 for x in nba['drafted or no']]
 
+# drop drafted or no column
+nba = nba.drop(columns = 'draft or no', axis=1, inplace=True)
+nba.columns
 
 # PCA - a lot of correlation between variables
 
 #plot
 #
-
 
 #kNN as can handle missing variables
 
