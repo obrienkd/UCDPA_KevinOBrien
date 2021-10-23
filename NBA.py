@@ -9,10 +9,10 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-
+from sklearn import decomposition, datasets
 
 # read csv file in
-nba = pd.read_csv(r'c:\users\hp\nba_draft_combine_all_years.csv')
+nba = pd.read_csv(r'c:\users\hp\nba_draft_combine_all_years2.csv')
 
 #predict if nba player is drafted or not based on values from the draft competition
 
@@ -38,8 +38,6 @@ nba['Body Fat'] = nba['Body Fat'].replace(np.nan,nba['Body Fat'].median())
 nba['Agility'] = nba['Agility'].replace(np.nan,nba['Agility'].median())
 nba['Sprint'] = nba['Sprint'].replace(np.nan,nba['Sprint'].median())
 nba['Bench'] = nba['Bench'].replace(np.nan,nba['Bench'].median())
-# only 1 value missing height with shoes
-
 
 print(nba.isna().sum())
 
@@ -72,15 +70,10 @@ for m in numeric_figs:
     sns.boxplot(y=m, data=nba, ax=ax[1])
     fig.savefig("./figures/distributions/{}.png".format(m))
 
-
-
 for n in numeric_figs:
     fig2 = sns.catplot(data=nba, kind="swarm", x="drafted or no", y=n, palette="dark")
     plt.title('Group Differences in: {}'.format(n), fontsize=16)
     fig2.savefig("./figures//group_differences/{}.png".format(n))
-
-#drop draft
-
 
 # figure out if there is much correlation between variables as some are similar
 cor_mat = nba.corr()
@@ -98,14 +91,41 @@ for col in numeric_figs:
 
 #convert to 'drafted or no' to 1 or 0
 
-nba['draft'] = [1 if x == 'Drafted' else 0 for x in nba['drafted or no']]
+# nba['draft'] = [1 if x == 'Drafted' else 0 for x in nba['drafted or no']]
 
-# drop drafted or no column
+# drop columns
 
 # PCA - a lot of correlation between variables
+nba.columns
+# the column trying to preditct
+y = nba['drafted or no']
 
-#plot
-#
+# remove all non z-score columns
+nba.drop(columns = ['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (With Shoes)',
+       'Wingspan', 'Standing reach', 'Vertical (Max)', 'Vertical (Max Reach)',
+       'Vertical (No Step)', 'Vertical (No Step Reach)', 'Weight', 'Body Fat',
+       'Bench', 'Agility', 'Sprint', 'drafted or no', 'drafted_top10' ],inplace=True)
+nba.columns
+
+#one hot encode years
+
+
+# pca
+
+print(nba.isna().sum())
+pca = decomposition.PCA().fit(nba)
+plt.plot(np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel('number of components')
+plt.ylabel('cumulative explained variance');
+print(np.cumsum(pca.explained_variance_ratio_))
+x_pca = decomposition.PCA(n_components=8).fit(nba)
+x_pca.singular_values_
+components = x_pca.transform(nba)
+x_projected = x_pca.inverse_transform(components)
+print(x_projected)
+
+
+
 
 
 
