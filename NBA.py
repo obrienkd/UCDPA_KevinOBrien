@@ -1,30 +1,21 @@
-import numpy
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import regex
 import numpy as np
 import seaborn as sns
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.model_selection import KFold
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
-from statsmodels.stats.outliers_influence import variance_inflation_factor
+from imblearn import under_sampling, over_sampling
+from imblearn.over_sampling import SMOTE
 from sklearn import decomposition, datasets
-from sklearn.model_selection import KFold
+from sklearn.svm import SVC
 
 # read csv file in
 nba = pd.read_csv(r'c:\users\hp\nba_draft_combine_all_years2.csv')
 
 # predict if nba player is drafted or not based on values from the draft competition
 
-# drop draft pick column & height-no shoes
-
 # class imbalance
 print(nba['drafted or no'].value_counts())
-
-# over sample / SMOTE / under
-nba.isna().sum()
 
 # Any n/a's?
 print(nba.isna().sum())
@@ -41,10 +32,7 @@ nba['Agility'] = nba['Agility'].replace(np.nan, nba['Agility'].median())
 nba['Sprint'] = nba['Sprint'].replace(np.nan, nba['Sprint'].median())
 nba['Bench'] = nba['Bench'].replace(np.nan, nba['Bench'].median())
 
-print(nba.isna().sum())
-
 # box plots -
-
 sns.set_theme(style="whitegrid")
 
 # convert all inches to cm
@@ -81,19 +69,10 @@ cor_mat = nba.corr()
 g = sns.heatmap(cor_mat, linewidths=1)
 plt.show()
 plt.savefig("./figures/correlation/correlation.png")
-# large correlation between ht variables
 
 # transform variables due to outliers
-
 for col in numeric_figs:
     nba["{}_zscore".format(col)] = (nba[col] - nba[col].mean()) / nba[col].std(ddof=0)
-
-# 384 drafted, 133 not drafted
-#write csv file
-
-# PCA - a lot of correlation between variables
-nba.columns
-# the column trying to preditct
 
 # remove all non z-score columns
 nba.drop(columns=['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (With Shoes)',
@@ -103,11 +82,9 @@ nba.drop(columns=['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (
 nba.columns
 nba.to_csv('nba_pre_pca.csv')
 
-print(nba.head())
-
 ## SMOTE due to imbalances in prediction variable
-from imblearn import under_sampling, over_sampling
-from imblearn.over_sampling import SMOTE
+# from imblearn import under_sampling, over_sampling
+# from imblearn.over_sampling import SMOTE
 
 xcols = [x for x in list(nba.columns) if x != 'drafted or no' not in x]
 undersample = SMOTE()
@@ -121,31 +98,28 @@ x_over = pd.read_csv('x_over.csv')
 y_over = pd.read_csv('y_over.csv')
 
 # With the new variables from SMOTE - enter PCA
-from sklearn import decomposition, datasets
-import numpy as np
-import matplotlib.pyplot as plt
 pca = decomposition.PCA().fit(x_over)
 plt.plot(np.cumsum(pca.explained_variance_ratio_))
 plt.xlabel('number of components')
 plt.ylabel('cumulative explained variance');
 plt.show()
 
+# evaluate the variance in the PCA
 print(np.cumsum(pca.explained_variance_ratio_))
 
+# PCA
 x_pca = decomposition.PCA(n_components=10).fit(x_over)
 x_pca.singular_values_
 components = x_pca.transform(x_over)
 x_projected = x_pca.inverse_transform(components)
 print(x_projected)
 
-
+# Support vector machine
 from sklearn.model_selection import train_test_split
 x_train, x_test, y_train, y_test = train_test_split(x_projected,y_over, test_size=0.30) #x_projected, x_over
 print((x_train.shape, x_test.shape, y_train.shape, y_test.shape))
 
 
-
-from sklearn.svm import SVC
 grid_params = {'C':[1,10,100,1000],'gamma':[1,0.1,0.001,0.0001], 'kernel':['linear','rbf']}
 gs = GridSearchCV(SVC(), grid_params, verbose=2, cv=3, n_jobs=2)
 gs_results = gs.fit(x_train, y_train.values.ravel())
@@ -166,4 +140,3 @@ for i in range(0,100):
 print("F1 {}+- {}".format(np.mean(f1), np.std(f1)))
 print("Precision {}+- {}".format(np.mean(precisions), np.std(precisions)))
 print("Recall {}+- {}".format(np.mean(recalls), np.std(recalls)))
-
