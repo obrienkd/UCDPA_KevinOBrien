@@ -38,9 +38,9 @@ nba['Body Fat'] = nba['Body Fat'].replace(np.nan,nba['Body Fat'].median())
 nba['Agility'] = nba['Agility'].replace(np.nan,nba['Agility'].median())
 nba['Sprint'] = nba['Sprint'].replace(np.nan,nba['Sprint'].median())
 nba['Bench'] = nba['Bench'].replace(np.nan,nba['Bench'].median())
-print(nba.isna().sum())
-
+# only 1 value missing height with shoes
 nba = nba['Height (With Shoes)'].dropna
+
 print(nba.isna().sum())
 
 # box plots -
@@ -52,8 +52,8 @@ inch_cols = ['Height (No Shoes)', 'Height (With Shoes)', 'Wingspan', 'Standing r
        'Vertical (Max Reach)', 'Vertical (No Step)',
        'Vertical (No Step Reach)']
 
-for n in inch_cols:
-    nba[n] = nba[n] * 2.54
+for x in inch_cols:
+    nba[x] = nba[x]*2.54
 
 # convert weight in lbs to kilos
 nba['Weight'] = nba['Weight'] * 0.453592
