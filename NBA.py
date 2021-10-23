@@ -33,8 +33,7 @@ print(nba.isna().sum())
 
 nba['Vertical (Max)'] = nba['Vertical (Max)'].replace(np.nan, nba['Vertical (Max)'].median())
 nba['Vertical (Max Reach)'] = nba['Vertical (Max Reach)'].replace(np.nan, nba['Vertical (Max Reach)'].median())
-nba['Vertical (No Step Reach)'] = nba['Vertical (No Step Reach)'].replace(np.nan,
-                                                                          nba['Vertical (No Step Reach)'].median())
+nba['Vertical (No Step Reach)'] = nba['Vertical (No Step Reach)'].replace(np.nan, nba['Vertical (No Step Reach)'].median())
 nba['Vertical (No Step)'] = nba['Vertical (No Step)'].replace(np.nan, nba['Vertical (No Step)'].median())
 nba['Weight'] = nba['Weight'].replace(np.nan, nba['Weight'].median())
 nba['Body Fat'] = nba['Body Fat'].replace(np.nan, nba['Body Fat'].median())
@@ -90,12 +89,13 @@ for col in numeric_figs:
     nba["{}_zscore".format(col)] = (nba[col] - nba[col].mean()) / nba[col].std(ddof=0)
 
 # 384 drafted, 133 not drafted
+#write csv file
 
+nba.to_csv('nba_pre_pca.csv')
 # convert to 'drafted or no' to 1 or 0
 
 # nba['draft'] = [1 if x == 'Drafted' else 0 for x in nba['drafted or no']]
 
-# drop columns
 
 # PCA - a lot of correlation between variables
 nba.columns
@@ -109,7 +109,25 @@ nba.drop(columns=['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (
                   'Bench', 'Agility', 'Sprint', 'drafted or no', 'drafted_top10'], inplace=True)
 nba.columns
 
-# one hot encode years
+nba_to_smote = pd.read_csv('nba_pre_pca.csv')
+nba_to_smote.drop(columns=['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (With Shoes)',
+                  'Wingspan', 'Standing reach', 'Vertical (Max)', 'Vertical (Max Reach)',
+                  'Vertical (No Step)', 'Vertical (No Step Reach)', 'Weight', 'Body Fat',
+                  'Bench', 'Agility', 'Sprint', 'drafted_top10'], inplace=True)
+
+nba_to_smote['drafted or no'].value_counts()
+
+from imblearn.over_sampling import RandomOverSampler
+from imblearn.over_sampling import SMOTE
+
+
+xcols = [x for x in list(nba_to_smote.columns) if x != 'drafted or no' not in x]
+undersample = SMOTE()
+X = nba_to_smote[xcols]
+Y = nba_to_smote[['completed_phase_2']]
+x_over, y_over = undersample.fit_resample(X, Y)
+print((x_over.shape, y_over.shape))
+
 
 
 # pca
