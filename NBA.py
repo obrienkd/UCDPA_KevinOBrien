@@ -6,7 +6,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split, GridSearchCV
 from imblearn import under_sampling, over_sampling
 from imblearn.over_sampling import SMOTE
-from sklearn import decomposition, datasets
+from sklearn import decomposition
 from sklearn.svm import SVC
 
 # read csv file in
@@ -115,10 +115,8 @@ x_projected = x_pca.inverse_transform(components)
 print(x_projected)
 
 # Support vector machine
-from sklearn.model_selection import train_test_split
 x_train, x_test, y_train, y_test = train_test_split(x_projected,y_over, test_size=0.30) #x_projected, x_over
 print((x_train.shape, x_test.shape, y_train.shape, y_test.shape))
-
 
 grid_params = {'C':[1,10,100,1000],'gamma':[1,0.1,0.001,0.0001], 'kernel':['linear','rbf']}
 gs = GridSearchCV(SVC(), grid_params, verbose=2, cv=3, n_jobs=2)
