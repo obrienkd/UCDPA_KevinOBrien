@@ -91,121 +91,79 @@ for col in numeric_figs:
 # 384 drafted, 133 not drafted
 #write csv file
 
-nba.to_csv('nba_pre_pca.csv')
-# convert to 'drafted or no' to 1 or 0
-
-# nba['draft'] = [1 if x == 'Drafted' else 0 for x in nba['drafted or no']]
-
-
 # PCA - a lot of correlation between variables
 nba.columns
 # the column trying to preditct
-y = nba['drafted or no']
 
 # remove all non z-score columns
 nba.drop(columns=['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (With Shoes)',
                   'Wingspan', 'Standing reach', 'Vertical (Max)', 'Vertical (Max Reach)',
                   'Vertical (No Step)', 'Vertical (No Step Reach)', 'Weight', 'Body Fat',
-                  'Bench', 'Agility', 'Sprint', 'drafted or no', 'drafted_top10'], inplace=True)
-nba.columns
-
-nba_to_smote = pd.read_csv('nba_pre_pca.csv')
-nba_to_smote.drop(columns=['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (With Shoes)',
-                  'Wingspan', 'Standing reach', 'Vertical (Max)', 'Vertical (Max Reach)',
-                  'Vertical (No Step)', 'Vertical (No Step Reach)', 'Weight', 'Body Fat',
                   'Bench', 'Agility', 'Sprint', 'drafted_top10'], inplace=True)
+nba.columns
+nba.to_csv('nba_pre_pca.csv')
 
-nba_to_smote['drafted or no'].value_counts()
+print(nba.head())
 
-from imblearn.over_sampling import RandomOverSampler
+## SMOTE due to imbalances in prediction variable
+from imblearn import under_sampling, over_sampling
 from imblearn.over_sampling import SMOTE
 
-
-xcols = [x for x in list(nba_to_smote.columns) if x != 'drafted or no' not in x]
+xcols = [x for x in list(nba.columns) if x != 'drafted or no' not in x]
 undersample = SMOTE()
-X = nba_to_smote[xcols]
-Y = nba_to_smote[['completed_phase_2']]
+X = nba[xcols]
+Y = nba[['drafted or no']]
 x_over, y_over = undersample.fit_resample(X, Y)
 print((x_over.shape, y_over.shape))
 
+# due to some error in my pycharm importing imblearn, i've ran it in jupyter, exported as csv, and uploaded to pycharm
+x_over = pd.read_csv('x_over.csv')
+y_over = pd.read_csv('y_over.csv')
 
-
-# pca
-
-print(nba.isna().sum())
-pca = decomposition.PCA().fit(nba)
+# With the new variables from SMOTE - enter PCA
+from sklearn import decomposition, datasets
+import numpy as np
+import matplotlib.pyplot as plt
+pca = decomposition.PCA().fit(x_over)
 plt.plot(np.cumsum(pca.explained_variance_ratio_))
 plt.xlabel('number of components')
 plt.ylabel('cumulative explained variance');
+plt.show()
+
 print(np.cumsum(pca.explained_variance_ratio_))
-x_pca = decomposition.PCA(n_components=8).fit(nba)
+
+x_pca = decomposition.PCA(n_components=10).fit(x_over)
 x_pca.singular_values_
-components = x_pca.transform(nba)
+components = x_pca.transform(x_over)
 x_projected = x_pca.inverse_transform(components)
 print(x_projected)
 
-principalDF = pd.DataFrame(data=components, columns=['PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6', 'PC7', 'PC8'])
-principalDF
 
-x_train, x_test, y_train, y_test = train_test_split(principalDF, y, test_size=0.3, random_state=666)
-### KNN
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_projected,y_over, test_size=0.30) #x_projected, x_over
+print((x_train.shape, x_test.shape, y_train.shape, y_test.shape))
 
-knn = KNeighborsClassifier()
-knn.fit(x_train, y_train)
 
-print("The training accuracy score is : ", knn.score(x_train, y_train))
-y_pred = knn.predict(x_test)
-print("The test accuracy score is : ", accuracy_score(y_test, y_pred))
 
-param_grid = {'algorithm': ['ball_tree', 'kd_tree', 'brute'],
-              'leaf_size': [18, 20, 25, 27, 30, 32, 34],
-              'n_neighbors': [3, 5, 7, 9, 10, 11, 12, 13]
-              }
+from sklearn.svm import SVC
+grid_params = {'C':[1,10,100,1000],'gamma':[1,0.1,0.001,0.0001], 'kernel':['linear','rbf']}
+gs = GridSearchCV(SVC(), grid_params, verbose=2, cv=3, n_jobs=2)
+gs_results = gs.fit(x_train, y_train.values.ravel())
+print("Best parameters set found on development set:")
+print(gs_results.best_params_)
 
-gridsearch = GridSearchCV(knn, param_grid, verbose=3)
-gridsearch.fit(x_train, y_train)
+from sklearn.svm import SVC
+f1 = []
+precisions = []
+recalls = []
+for i in range(0,100):
+    clf =SVC(**gs_results.best_params_)
+    clf.fit(x_train, y_train.values.ravel())
+    y_pred = clf.predict(x_test)
+    f1.append(f1_score(y_test, y_pred))
+    precisions.append(precision_score(y_test, y_pred))
+    recalls.append(recall_score(y_test, y_pred))
+print("F1 {}+- {}".format(np.mean(f1), np.std(f1)))
+print("Precision {}+- {}".format(np.mean(precisions), np.std(precisions)))
+print("Recall {}+- {}".format(np.mean(recalls), np.std(recalls)))
 
-gridsearch.best_params_
-
-knn = KNeighborsClassifier(algorithm='ball_tree', leaf_size=18, n_neighbors=11)
-knn.fit(x_train, y_train)
-
-# Lets check our training accuracy
-print("The training accuracy after hyperparameter tuning is : ", knn.score(x_train, y_train))
-
-y_pred = knn.predict(x_test)
-print("The testing accuracy after hyperparameter tuning is : ", accuracy_score(y_test, y_pred))
-
-kfold = KFold(n_splits=12, random_state=666, shuffle=True)
-kfold.get_n_splits(nba)
-
-from statistics import mean
-
-knn = KNeighborsClassifier(algorithm='ball_tree', leaf_size=18, n_neighbors=11)
-cnt = 0
-count = []
-train_score = []
-test_score = []
-
-principal_scale = principalDF.to_numpy()
-
-for train_index, test_index in kfold.split(principal_scale):
-    X_train, X_test = principal_scale[train_index], principal_scale[
-        test_index]  # our scaled data is an array so it can work on x[value]
-    y_train, y_test = y.iloc[train_index], y.iloc[
-        test_index]  # y is a dataframe so we have to use "iloc" to retreive data
-    knn.fit(X_train, y_train)
-    train_score_ = knn.score(X_train, y_train)
-    test_score_ = knn.score(X_test, y_test)
-    cnt = np.array()
-    cnt += 1
-    count.append(cnt)
-    train_score.append(train_score_)
-    test_score.append(test_score_)
-
-    print("for k = ", cnt)
-    print("train_score is :  ", train_score_, "and test score is :  ", test_score_)
-print("************************************************")
-print("************************************************")
-print("Average train score is :  ", mean(train_score))
-print("Average test score is :  ", mean(test_score))
