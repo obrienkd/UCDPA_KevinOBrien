@@ -109,7 +109,7 @@ nba.columns
 #plot
 #
 
-#kNN as can handle missing variables
+
 
 
 
