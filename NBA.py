@@ -39,7 +39,7 @@ nba['Agility'] = nba['Agility'].replace(np.nan,nba['Agility'].median())
 nba['Sprint'] = nba['Sprint'].replace(np.nan,nba['Sprint'].median())
 nba['Bench'] = nba['Bench'].replace(np.nan,nba['Bench'].median())
 # only 1 value missing height with shoes
-nba = nba['Height (With Shoes)'].dropna
+
 
 print(nba.isna().sum())
 
@@ -101,8 +101,6 @@ for col in numeric_figs:
 nba['draft'] = [1 if x == 'Drafted' else 0 for x in nba['drafted or no']]
 
 # drop drafted or no column
-nba = nba.drop(columns = 'draft or no', axis=1, inplace=True)
-nba.columns
 
 # PCA - a lot of correlation between variables
 
