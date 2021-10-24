@@ -8,7 +8,7 @@ from imblearn import under_sampling, over_sampling
 from imblearn.over_sampling import SMOTE
 from sklearn import decomposition
 from sklearn.svm import SVC
-
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
 # read csv file in
 nba = pd.read_csv(r'c:\users\hp\nba_draft_combine_all_years2.csv')
 
@@ -138,3 +138,50 @@ for i in range(0,100):
 print("F1 {}+- {}".format(np.mean(f1), np.std(f1)))
 print("Precision {}+- {}".format(np.mean(precisions), np.std(precisions)))
 print("Recall {}+- {}".format(np.mean(recalls), np.std(recalls)))
+
+# F1 0.93
+# Precision = 0.89
+# Recall = 0.98
+
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
+
+conf_mat = confusion_matrix(y_test, y_pred)
+
+true_pos = conf_mat[0][0]
+false_pos = conf_mat[0][1]
+false_neg = conf_mat[1][0]
+true_neg = conf_mat[1][1]
+
+# Accuracy
+Accuracy = (true_pos + true_neg) / (true_pos + false_pos + false_neg + true_neg)
+
+# Recall
+Recall = true_pos/(true_pos+false_neg)
+
+# Precision
+Precision = true_pos/(true_pos+false_pos)
+
+# F1 Score
+F1_Score = 2*(Recall * Precision) / (Recall + Precision)
+
+# AUC
+auc = roc_auc_score(y_test, y_pred)
+
+print('Accuracy = ', Accuracy, '\n'
+    'Misclassification = ', 1-Accuracy, '\n',
+      'Sensitivity = ', Recall, '\n',
+      'Specificity = ', true_negative/float(true_negative+false_positive), '\n',
+      'Precision = ', Precision, '\n',
+      'F1 Score = ', F1_Score, '\n',
+      'Area Under Curve = ', auc, '\n',)
+
+# ROC
+fpr, tpr, threshold = roc_curve(y_test, y_pred)
+plt.plot(fpr, tpr, color='black', label='ROC')
+plt.plot([0, 1], [0, 1], color='red', linestyle='--', label='ROC curve (area = %0.3f)' % auc)
+plt.xlabel('False Positive Rate (FPR)')
+plt.ylabel('True Positive Rate (TPR)')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend()
+plt.savefig("./figures/ROC/roc_curve.png")
+plt.show()
