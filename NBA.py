@@ -13,15 +13,20 @@ from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc
 nba = pd.read_csv(r'c:\users\hp\nba_draft_combine_all_years2.csv')
 
 # predict if nba player is drafted or not based on values from the draft competition
+nba.columns
+
+# add drafted or no column = 0 or 1
+nba['drafted or no'] = nba.apply(lambda x: 1 if x['Draft pick'] > 0 else 0, axis=1)
+nba['drafted_top20'] = nba.apply(lambda x: 2 if (x['Draft pick'] >0 and x['Draft pick'] <21) else (1 if x['Draft pick'] >=21 else 0), axis=1)
 
 # class imbalance
 print(nba['drafted or no'].value_counts())
+print(nba['drafted_top20'].value_counts())
 
 # Any n/a's?
 print(nba.isna().sum())
 
 # median values assigned to 67 missing verticals, weight, body fat and 233 bench press values
-
 nba['Vertical (Max)'] = nba['Vertical (Max)'].replace(np.nan, nba['Vertical (Max)'].median())
 nba['Vertical (Max Reach)'] = nba['Vertical (Max Reach)'].replace(np.nan, nba['Vertical (Max Reach)'].median())
 nba['Vertical (No Step Reach)'] = nba['Vertical (No Step Reach)'].replace(np.nan, nba['Vertical (No Step Reach)'].median())
@@ -46,7 +51,7 @@ for x in inch_cols:
 # convert weight in lbs to kilos
 nba['Weight'] = nba['Weight'] * 0.453592
 
-# assess the distribution of the variables in the columns
+# assess the distribution of the variables in the columns in comparison with the 2 categorical columns created - drafted yes or no, drafted top 20
 numeric_figs = ['Height (No Shoes)', 'Height (With Shoes)', 'Wingspan', 'Standing reach', 'Vertical (Max)',
                 'Vertical (Max Reach)', 'Vertical (No Step)',
                 'Vertical (No Step Reach)', 'Weight', 'Body Fat', 'Bench', 'Agility',
@@ -63,6 +68,11 @@ for n in numeric_figs:
     fig2 = sns.catplot(data=nba, kind="swarm", x="drafted or no", y=n, palette="dark")
     plt.title('Group Differences in: {}'.format(n), fontsize=16)
     fig2.savefig("./figures//group_differences/{}.png".format(n))
+
+for n in numeric_figs:
+    fig2 = sns.catplot(data=nba, kind="swarm", x="drafted_top20", y=n, palette="dark")
+    plt.title('Group Differences in: {}'.format(n), fontsize=16)
+    fig2.savefig("./figures//group_differences_top20/{}.png".format(n))
 
 # figure out if there is much correlation between variables as some are similar
 cor_mat = nba.corr()
