@@ -8,7 +8,9 @@ from imblearn import under_sampling, over_sampling
 from imblearn.over_sampling import SMOTE
 from sklearn import decomposition
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score, precision_score, f1_score, \
+    recall_score
+
 # read csv file in
 nba = pd.read_csv(r'c:\users\hp\nba_draft_combine_all_years2.csv')
 
@@ -69,13 +71,14 @@ for n in numeric_figs:
     plt.title('Group Differences in: {}'.format(n), fontsize=16)
     fig2.savefig("./figures//group_differences/{}.png".format(n))
 
-for n in numeric_figs:
-    fig2 = sns.catplot(data=nba, kind="swarm", x="drafted_top20", y=n, palette="dark")
-    plt.title('Group Differences in: {}'.format(n), fontsize=16)
-    fig2.savefig("./figures//group_differences_top20/{}.png".format(n))
+    for n in numeric_figs:
+        fig2 = sns.catplot(data=nba, kind="bar", x="drafted_top20", y=n, palette="dark")
+        plt.title('Group Differences in: {}'.format(n), fontsize=16)
+        fig2.savefig("./figures//group_differences_top20/{}.png".format(n))
 
 # figure out if there is much correlation between variables as some are similar
 cor_mat = nba.corr()
+f, ax = plt.subplots(figsize=(15, 8))
 g = sns.heatmap(cor_mat, linewidths=1)
 plt.show()
 plt.savefig("./figures/correlation/correlation.png")
@@ -88,16 +91,15 @@ for col in numeric_figs:
 nba.drop(columns=['Draft pick', 'Player', 'Year', 'Height (No Shoes)', 'Height (With Shoes)',
                   'Wingspan', 'Standing reach', 'Vertical (Max)', 'Vertical (Max Reach)',
                   'Vertical (No Step)', 'Vertical (No Step Reach)', 'Weight', 'Body Fat',
-                  'Bench', 'Agility', 'Sprint', 'drafted_top10'], inplace=True)
+                  'Bench', 'Agility', 'Sprint', 'drafted_top10', 'drafted_top20'], inplace=True)
 nba.columns
-nba.to_csv('nba_pre_pca.csv')
 
-## SMOTE due to imbalances in prediction variable
+## evaluate a minority, SMOTE, majority of sampling
 # from imblearn import under_sampling, over_sampling
 # from imblearn.over_sampling import SMOTE
 
 xcols = [x for x in list(nba.columns) if x != 'drafted or no' not in x]
-undersample = SMOTE()
+undersample = RandomOverSampler(strategy='minority')
 X = nba[xcols]
 Y = nba[['drafted or no']]
 x_over, y_over = undersample.fit_resample(X, Y)
@@ -128,7 +130,7 @@ print(x_projected)
 x_train, x_test, y_train, y_test = train_test_split(x_projected,y_over, test_size=0.30) #x_projected, x_over
 print((x_train.shape, x_test.shape, y_train.shape, y_test.shape))
 
-grid_params = {'C':[1,10,100,1000],'gamma':[1,0.1,0.001,0.0001], 'kernel':['linear','rbf']}
+grid_params = {'C':[0.001, 0.01, 0.1, 1,10,100,1000],'gamma':[100,10,1,0.1,0.001,0.0001], 'kernel':['linear','rbf', 'polynomial']}
 gs = GridSearchCV(SVC(), grid_params, verbose=2, cv=3, n_jobs=2)
 gs_results = gs.fit(x_train, y_train.values.ravel())
 print("Best parameters set found on development set:")
@@ -149,49 +151,34 @@ print("F1 {}+- {}".format(np.mean(f1), np.std(f1)))
 print("Precision {}+- {}".format(np.mean(precisions), np.std(precisions)))
 print("Recall {}+- {}".format(np.mean(recalls), np.std(recalls)))
 
-# F1 0.93
-# Precision = 0.89
-# Recall = 0.98
 
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, roc_auc_score
+# F1 0.91
+# Precision = 0.83
+# Recall = 1.0
 
+# Create confusion matrix 2x2
 conf_mat = confusion_matrix(y_test, y_pred)
 
 true_pos = conf_mat[0][0]
 false_pos = conf_mat[0][1]
 false_neg = conf_mat[1][0]
 true_neg = conf_mat[1][1]
+print(conf_mat)
 
-# Accuracy
 Accuracy = (true_pos + true_neg) / (true_pos + false_pos + false_neg + true_neg)
-
-# Recall
 Recall = true_pos/(true_pos+false_neg)
-
-# Precision
 Precision = true_pos/(true_pos+false_pos)
-
-# F1 Score
 F1_Score = 2*(Recall * Precision) / (Recall + Precision)
 
 # AUC
 auc = roc_auc_score(y_test, y_pred)
-
-print('Accuracy = ', Accuracy, '\n'
-    'Misclassification = ', 1-Accuracy, '\n',
-      'Sensitivity = ', Recall, '\n',
-      'Specificity = ', true_negative/float(true_negative+false_positive), '\n',
-      'Precision = ', Precision, '\n',
-      'F1 Score = ', F1_Score, '\n',
-      'Area Under Curve = ', auc, '\n',)
-
 # ROC
 fpr, tpr, threshold = roc_curve(y_test, y_pred)
-plt.plot(fpr, tpr, color='black', label='ROC')
-plt.plot([0, 1], [0, 1], color='red', linestyle='--', label='ROC curve (area = %0.3f)' % auc)
+plt.plot(fpr, tpr, color='black', label='ROC (area = %0.3f)' % auc)
+plt.plot([0, 1], [0, 1], color='red', linestyle='--', label='Reference Line')
 plt.xlabel('False Positive Rate (FPR)')
 plt.ylabel('True Positive Rate (TPR)')
 plt.title('Receiver Operating Characteristic (ROC) Curve')
 plt.legend()
-plt.savefig("./figures/ROC/roc_curve.png")
 plt.show()
+plt.savefig("./figures/ROC/roc_curve.png")
